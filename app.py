@@ -1,26 +1,33 @@
 import os
-from flask import (
-    Flask, render_template, request,
-    redirect, url_for, flash
-)
+from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash
 from datetime import datetime
+from werkzeug.security import generate_password_hash
+import pymysql
+
+pymysql.install_as_MySQLdb()
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "dev-secret")
+app.secret_key = os.environ.get("SECRET_KEY", "Clave")
 
-# --- SQLITE CONFIG (PRODUCTION SAFE) ---
-basedir = os.path.abspath(os.path.dirname(__file__))
+# DATABASE CONFIG (LOCAL + RAILWAY SAFE)
+if os.environ.get("MYSQL_HOST"):
+    app.config["SQLALCHEMY_DATABASE_URI"] = (
+        f"mysql+pymysql://{os.environ.get('MYSQL_USER')}:"
+        f"{os.environ.get('MYSQL_PASSWORD')}@"
+        f"{os.environ.get('MYSQL_HOST')}:"
+        f"{os.environ.get('MYSQL_PORT')}/"
+        f"{os.environ.get('MYSQL_DATABASE')}"
+    )
+else:
+    app.config["SQLALCHEMY_DATABASE_URI"] = (
+        "mysql+pymysql://root:@localhost:3306/registration_db"
+    )
 
-app.config["SQLALCHEMY_DATABASE_URI"] = (
-    "sqlite:///" + os.path.join(basedir, "app.db")
-)
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
 db = SQLAlchemy(app)
 
-# --- MODEL ---
+# MODEL
 class User(db.Model):
     __tablename__ = "users"
 
@@ -32,7 +39,7 @@ class User(db.Model):
     password = db.Column(db.String(200), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-# --- ROUTES ---
+# ROUTES
 @app.route("/")
 def home():
     return render_template("register.html")
@@ -76,10 +83,9 @@ def register():
         db.session.add(new_user)
         db.session.commit()
         return redirect(url_for("success"))
-    except Exception as e:
+    except Exception:
         db.session.rollback()
         flash("Database error", "error")
-        print(e)
         return redirect(url_for("home"))
 
 @app.route("/success")
@@ -90,11 +96,8 @@ def success():
 def users():
     return render_template("users.html", users=User.query.all())
 
-# --- RUN ---
+# RUN
 if __name__ == "__main__":
     with app.app_context():
-        db.create_all()
-    app.run(debug=True)
-
         db.create_all()
     app.run(debug=True)
