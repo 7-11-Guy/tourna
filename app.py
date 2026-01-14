@@ -1,14 +1,18 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
-from werkzeug.security import generate_password_hash
-import pymysql
-
-pymysql.install_as_MySQLdb()
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "Clave")
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret")
+
+basedir = os.path.abspath(os.path.dirname(__file__))
+
+app.config["SQLALCHEMY_DATABASE_URI"] = (
+    "sqlite:///" + os.path.join(basedir, "app.db")
+)
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+db = SQLAlchemy(app)
 
 # DATABASE CONFIG (LOCAL + RAILWAY SAFE)
 if os.environ.get("MYSQL_HOST"):
