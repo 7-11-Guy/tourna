@@ -1,5 +1,0 @@
-flask
-Flask-SQLAlchemy
-pymysql
-werkzeug
-gunicorn
